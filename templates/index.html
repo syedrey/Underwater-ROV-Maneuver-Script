@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNDERWATER ROV</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.1/socket.io.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body { overflow: hidden; touch-action: none; display: flex; flex-direction: column; }
+        .container { display: grid; width: 100vw; height: 100vh; }
+        
+        @media (orientation: landscape) {
+            .container { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+        }
+        
+        @media (orientation: portrait) {
+            .container { grid-template-columns: 1fr; grid-template-rows: auto; }
+        }
+        
+        .section { display: flex; justify-content: center; align-items: center; padding: 10px; }
+        .joystick-container { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+        .joystick { width: 150px; height: 150px; position: relative; background: lightgray; border-radius: 50%; }
+        .stick { width: 40px; height: 40px; background: red; position: absolute; border-radius: 50%; left: 55px; top: 55px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="section">
+            <img id="camera-feed" src="http://172.20.10.3:8080/?action=stream" alt="Live Camera Feed">
+        </div>
+        <div class="section joystick-container">
+            <div class="joystick" id="joystick1">
+                <div class="stick" id="stick1"></div>
+            </div>
+            <div class="joystick" id="joystick2">
+                <div class="stick" id="stick2"></div>
+            </div>
+        </div>
+        <div class="section"></div>
+        <div class="section"></div>
+    </div>
+    <script>
+        const socket = io();
+        let joystickData = { joystick1: { x: 0, y: 0 }, joystick2: { x: 0, y: 0 } };
+
+        function setupJoystick(joystickId, stickId, joystickKey) {
+            const joystick = document.getElementById(joystickId);
+            const stick = document.getElementById(stickId);
+            let isDragging = false;
+
+            function moveStick(clientX, clientY) {
+                const rect = joystick.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                const dx = clientX - centerX;
+                const dy = clientY - centerY;
+                joystickData[joystickKey].x = Math.min(100, Math.max(-100, dx / 75 * 100));
+                joystickData[joystickKey].y = Math.min(100, Math.max(-100, -dy / 75 * 100));
+                stick.style.left = `${Math.min(75, Math.max(-75, dx)) + 55}px`;
+                stick.style.top = `${Math.min(75, Math.max(-75, dy)) + 55}px`;
+                sendJoystickData();
+            }
+
+            function resetJoystick() {
+                joystickData[joystickKey] = { x: 0, y: 0 };
+                stick.style.left = '55px';
+                stick.style.top = '55px';
+                sendJoystickData();
+            }
+
+            joystick.addEventListener('mousedown', (e) => { isDragging = true; moveStick(e.clientX, e.clientY); });
+            joystick.addEventListener('mousemove', (e) => { if (isDragging) moveStick(e.clientX, e.clientY); });
+            joystick.addEventListener('mouseup', () => { isDragging = false; resetJoystick(); });
+            joystick.addEventListener('mouseleave', () => { isDragging = false; resetJoystick(); });
+            joystick.addEventListener('touchstart', (e) => { isDragging = true; moveStick(e.touches[0].clientX, e.touches[0].clientY); });
+            joystick.addEventListener('touchmove', (e) => { e.preventDefault(); if (isDragging) moveStick(e.touches[0].clientX, e.touches[0].clientY); });
+            joystick.addEventListener('touchend', () => { isDragging = false; resetJoystick(); });
+        }
+
+        function sendJoystickData() { socket.emit('joystick_data', joystickData); }
+        setupJoystick('joystick1', 'stick1', 'joystick1');
+        setupJoystick('joystick2', 'stick2', 'joystick2');
+
+        // 🎮 GAMEPAD SUPPORT (XInput/DInput)
+        window.addEventListener("gamepadconnected", () => {
+            console.log("Gamepad connected!");
+            setInterval(updateGamepad, 100);
+        });
+
+        function updateGamepad() {
+            const gamepads = navigator.getGamepads();
+            if (!gamepads) return;
+            const gp = gamepads[0]; // Use the first detected gamepad
+
+            if (gp) {
+                // 🎮 Left Stick → Joystick 1
+                joystickData.joystick1.x = Math.round(gp.axes[0] * 100); // Left Stick X
+                joystickData.joystick1.y = Math.round(gp.axes[1] * -100); // Left Stick Y (inverted)
+
+                // 🎮 Right Stick → Joystick 2
+                joystickData.joystick2.x = Math.round(gp.axes[2] * 100); // Right Stick X
+                joystickData.joystick2.y = Math.round(gp.axes[3] * -100); // Right Stick Y (inverted)
+
+                sendJoystickData();
+            }
+        }
+    </script>
+</body>
+</html>
