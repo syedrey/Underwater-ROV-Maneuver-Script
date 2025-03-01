@@ -1,6 +1,8 @@
 #include <Servo.h>
 
 Servo motor1;  // Bidirectional ESC requires Servo library
+Servo motor2;
+Servo motor3;
 
 const int motor1Pin = 9;  // Motor 1 (Bidirectional ESC)
 const int motor2Pin = 10; // Motor 2 (Normal ESC)
@@ -8,18 +10,20 @@ const int motor3Pin = 11; // Motor 3 (Normal ESC)
 
 int currentMotor1Speed = 0;
 int targetMotor1Speed = 0;
-int motor2Speed = 0;
-int motor3Speed = 0;
+int motor2Speed = 1500;  // Neutral for ESC
+int motor3Speed = 1500;  // Neutral for ESC
 
 void setup() {
   motor1.attach(motor1Pin);
-  pinMode(motor2Pin, OUTPUT);
-  pinMode(motor3Pin, OUTPUT);
-  
+  motor2.attach(motor2Pin);
+  motor3.attach(motor3Pin);
+
   Serial.begin(9600);
   
   // **Safety: Send Neutral Signal to ESC on Startup**
   motor1.writeMicroseconds(1500);
+  motor2.writeMicroseconds(1500);
+  motor3.writeMicroseconds(1500);
   delay(2000);  // Wait for ESC to initialize
 }
 
@@ -39,25 +43,24 @@ void loop() {
   // **Smooth Transition for Motor 1**
   if (currentMotor1Speed != targetMotor1Speed) {
     if (currentMotor1Speed < targetMotor1Speed) {
-      currentMotor1Speed += 2;  // Adjust step for smoothness
-      if (currentMotor1Speed > targetMotor1Speed) {
-        currentMotor1Speed = targetMotor1Speed;
-      }
+      currentMotor1Speed += 2;
+      if (currentMotor1Speed > targetMotor1Speed) currentMotor1Speed = targetMotor1Speed;
     } else {
       currentMotor1Speed -= 2;
-      if (currentMotor1Speed < targetMotor1Speed) {
-        currentMotor1Speed = targetMotor1Speed;
-      }
+      if (currentMotor1Speed < targetMotor1Speed) currentMotor1Speed = targetMotor1Speed;
     }
   }
 
-  // **Motor 1 (Bidirectional ESC)**
+  // **Mapping Motor 1 to Correct PWM**
   int motor1PWM = map(currentMotor1Speed, -100, 100, 1000, 2000);  
   motor1.writeMicroseconds(motor1PWM); // Use Servo library for precise PWM
 
-  // **Motor 2 & 3 (Normal ESCs, Forward Only)**
-  analogWrite(motor2Pin, motor2Speed);
-  analogWrite(motor3Pin, motor3Speed);
+  // **Mapping Motor 2 & 3 Correctly**
+  int motor2PWM = map(motor2Speed, -100, 100, 1000, 2000);
+  int motor3PWM = map(motor3Speed, -100, 100, 1000, 2000);
+
+  motor2.writeMicroseconds(motor2PWM);
+  motor3.writeMicroseconds(motor3PWM);
 
   delay(20);  // Small delay for smooth control
 }
