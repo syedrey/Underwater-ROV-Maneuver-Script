@@ -1,6 +1,7 @@
 #include <Servo.h>
 
-Servo motor1;  // Bidirectional ESC requires Servo library
+// **Motor Setup**
+Servo motor1;  // Bidirectional ESC
 Servo motor2;
 Servo motor3;
 
@@ -13,23 +14,43 @@ int targetMotor1Speed = 0;
 int motor2Speed = 1500;  // Neutral for ESC
 int motor3Speed = 1500;  // Neutral for ESC
 
+// **Sensor Pins**
+const int depthSensorPin = A0;
+const int tdsSensorPin = A1;
+const int tempSensorPin = 4;  // Digital pin
+
 void setup() {
+  Serial.begin(115200);  // Higher baud rate for smooth operation
+  
   motor1.attach(motor1Pin);
   motor2.attach(motor2Pin);
   motor3.attach(motor3Pin);
 
-  Serial.begin(9600);
-  
-  // **Safety: Send Neutral Signal to ESC on Startup**
+  // **Send Neutral Signal on Startup**
   motor1.writeMicroseconds(1500);
   motor2.writeMicroseconds(1500);
   motor3.writeMicroseconds(1500);
-  delay(2000);  // Wait for ESC to initialize
+  delay(2000);  // Allow ESCs to initialize
 }
 
 void loop() {
+  // **Read Sensor Data**
+  float depth = readDepthSensor();
+  float tds = readTDSSensor();
+  float temperature = readTemperatureSensor();
+
+  // **Send Sensor Data via Serial**
+  Serial.print(millis());  // Timestamp
+  Serial.print(",");
+  Serial.print(depth, 2);
+  Serial.print(",");
+  Serial.print(tds, 2);
+  Serial.print(",");
+  Serial.println(temperature, 2);
+
+  // **Read Motor Control Commands from Serial**
   if (Serial.available() > 0) {
-    String data = Serial.readStringUntil('\n'); // Read serial data until newline
+    String data = Serial.readStringUntil('\n'); // Read until newline
     int firstComma = data.indexOf(',');
     int lastComma = data.lastIndexOf(',');
 
@@ -41,19 +62,20 @@ void loop() {
   }
 
   // **Smooth Transition for Motor 1**
-  if (currentMotor1Speed != targetMotor1Speed) {
+  if (abs(currentMotor1Speed - targetMotor1Speed) > 2) {  // Deadband to prevent small fluctuations
     if (currentMotor1Speed < targetMotor1Speed) {
       currentMotor1Speed += 2;
-      if (currentMotor1Speed > targetMotor1Speed) currentMotor1Speed = targetMotor1Speed;
     } else {
       currentMotor1Speed -= 2;
-      if (currentMotor1Speed < targetMotor1Speed) currentMotor1Speed = targetMotor1Speed;
     }
   }
 
   // **Mapping Motor 1 to Correct PWM**
-  int motor1PWM = map(currentMotor1Speed, -100, 100, 1000, 2000);  
-  motor1.writeMicroseconds(motor1PWM); // Use Servo library for precise PWM
+  int motor1PWM = 1500;  // Default neutral
+  if (abs(targetMotor1Speed) > 5) {  // Zero-movement zone
+    motor1PWM = map(targetMotor1Speed, -100, 100, 1000, 2000);
+  }
+  motor1.writeMicroseconds(motor1PWM);
 
   // **Mapping Motor 2 & 3 Correctly**
   int motor2PWM = map(motor2Speed, -100, 100, 1000, 2000);
@@ -63,4 +85,20 @@ void loop() {
   motor3.writeMicroseconds(motor3PWM);
 
   delay(20);  // Small delay for smooth control
+}
+
+// **Sensor Reading Functions**
+float readDepthSensor() {
+  int rawValue = analogRead(depthSensorPin);
+  return (rawValue / 1023.0) * 1.6;  // Convert to MPa
+}
+
+float readTDSSensor() {
+  int rawValue = analogRead(tdsSensorPin);
+  return (rawValue / 1023.0) * 1000;  // Convert to ppm
+}
+
+float readTemperatureSensor() {
+  // Dummy function, replace with DS18B20 temperature sensor code if needed
+  return 25.0; // Default temperature (replace with actual sensor reading)
 }
