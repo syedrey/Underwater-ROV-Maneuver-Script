@@ -5,7 +5,7 @@ import serial
 app = Flask(__name__)
 socketio = SocketIO(app)
 
-arduino = serial.Serial('COM5', 9600)  # Change to your Arduino port
+arduino = serial.Serial('/dev/arduino', 115200)  # Change to your Arduino port
 
 @app.route('/')
 def index():
