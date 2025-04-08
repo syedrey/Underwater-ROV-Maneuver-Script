@@ -2,34 +2,204 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UNDERWATER ROV</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.1/socket.io.js"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GDX Control Centre</title>
+    <script src="{{ url_for('static', filename='socket.io.js') }}"></script>
     <style>
-        body { overflow: hidden; touch-action: none; display: flex; flex-direction: column; }
-        .container { display: grid; width: 100vw; height: 100vh; }
-        
-        @media (orientation: landscape) {
-            .container { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+        body { 
+            margin: 0; 
+            overflow-x: hidden;
+            touch-action: none; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            background: black; 
+        }
+        .video-container { 
+            flex: 55%; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            position: relative; 
+        }
+        .video-wrapper { 
+            width: 60%; 
+            max-width: 600px; 
+            height: auto; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            background: black; 
+            border-radius: 10px; 
+            overflow: hidden; 
+        }
+        .controls-container { 
+            flex: 45%; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+        }
+        .joystick-container { 
+            display: flex; 
+            gap: 20px; 
+        }
+        .joystick { 
+            width: 150px; 
+            height: 150px; 
+            background: lightgray; 
+            border-radius: 50%; 
+            position: relative; 
+            touch-action: none; 
+        }
+        .stick { 
+            width: 40px; 
+            height: 40px; 
+            background: red; 
+            position: absolute; 
+            border-radius: 50%; 
+            left: 55px; 
+            top: 55px; 
+            touch-action: none; 
+            pointer-events: none; 
+        }
+        #camera-feed { 
+            width: 100%; 
+            height: auto; 
+            object-fit: contain; 
         }
         
-        @media (orientation: portrait) {
-            .container { grid-template-columns: 1fr; grid-template-rows: auto; }
+        /* Digital Meter Styling */
+        .meter-container {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 10px;
+        }
+        .meter {
+            width: 180px;
+            height: 60px;
+            background: #222;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Courier New', monospace;
+            font-size: 22px;
+            color: #0f0;
+            text-shadow: 0 0 5px #0f0;
+            border: 2px solid #0f0;
         }
         
-        .section { display: flex; justify-content: center; align-items: center; padding: 10px; }
-        .joystick-container { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
-        .joystick { width: 150px; height: 150px; position: relative; background: lightgray; border-radius: 50%; }
-        .stick { width: 40px; height: 40px; background: red; position: absolute; border-radius: 50%; left: 55px; top: 55px; }
+        .button-container {
+            display: flex;
+            gap: 10px;
+            margin-left: 20px;
+        }
+
+        .button-container button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: white;
+            background: #333;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .button-container button:hover {
+            background: #555;
+        }
+
+        /* Mobile Portrait View */
+        @media screen and (max-width: 768px) and (orientation: portrait) {
+            body {
+                flex-direction: column;
+                height: auto;
+                min-height: 100vh;
+                overflow: hidden;
+            }
+            
+            .video-container {
+                flex: none;
+                order: 1;
+                width: 100%;
+                height: 40vh;
+                padding: 10px 0;
+            }
+            
+            .video-wrapper {
+                width: 90%;
+                height: 100%;
+                max-width: none;
+            }
+            
+            .controls-container {
+                flex: none;
+                order: 2;
+                width: 100%;
+                padding: 20px 0;
+            }
+            
+            .joystick-container {
+                flex-direction: row;
+                justify-content: center;
+            }
+            
+            .meter-container {
+                position: relative;
+                order: 3;
+                top: auto;
+                right: auto;
+                width: 90%;
+                margin: 0 auto;
+                padding: 15px;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .meter {
+                width: 150px;
+                height: 50px;
+                font-size: 18px;
+            }
+            
+            .button-container {
+                order: 4;
+                justify-content: center;
+                margin: 20px auto;
+                width: 90%;
+            }
+            
+            .button-container button {
+                flex: 1;
+                max-width: 200px;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="section">
-            <img id="camera-feed" src="http://172.20.10.3:8080/?action=stream" alt="Live Camera Feed">
+    <div class="video-container">
+        <div class="video-wrapper">
+            <img id="camera-feed" src="http://192.168.0.11:8080/?action=stream" alt="Drone Eyes Live">
         </div>
-        <div class="section joystick-container">
+        
+        <!-- Digital Meters - Desktop -->
+        <div class="meter-container">
+            <div class="meter">Temp: <span id="temp-value">0</span>°C</div>
+            <div class="meter">TDS: <span id="tds-value">0</span> ppm</div>
+            <div class="meter">Depth: <span id="depth-value">0</span> m</div>
+            <div class="meter">pH: <span id="ph-value">0</span></div>
+        </div>
+    </div>
+
+    <div class="controls-container">
+        <div class="joystick-container">
             <div class="joystick" id="joystick1">
                 <div class="stick" id="stick1"></div>
             </div>
@@ -37,74 +207,289 @@
                 <div class="stick" id="stick2"></div>
             </div>
         </div>
-        <div class="section"></div>
-        <div class="section"></div>
     </div>
+    
+    <div class="button-container">
+        <button id="restart-btn">Restart</button>
+        <button id="shutdown-btn">Shutdown</button>
+        <button id="restartRovBtn" class="control-btn">Restart rov</button>
+        <button id="restartMjpgBtn" class="control-btn">Restart mjpg</button>
+    </div>
+
     <script>
-        const socket = io();
-        let joystickData = { joystick1: { x: 0, y: 0 }, joystick2: { x: 0, y: 0 } };
+        const socket = io('http://192.168.0.11:5000', { transports: ['websocket'] });
+          
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+        socket.on('disconnect', () => {
+            console.log('Disconnected from server');
+        });
 
-        function setupJoystick(joystickId, stickId, joystickKey) {
-            const joystick = document.getElementById(joystickId);
-            const stick = document.getElementById(stickId);
-            let isDragging = false;
-
-            function moveStick(clientX, clientY) {
+        // Improved Joystick Control System
+        class JoystickController {
+            constructor() {
+                this.joystickData = { 
+                    joystick1: { x: 0, y: 0 }, 
+                    joystick2: { x: 0, y: 0 } 
+                };
+                this.activeTouches = {};
+                this.gamepadIndex = null;
+                // Add deadzone property (5% deadzone by default)
+                this.deadzone = 5; // percentage (0-100)
+                this.initJoysticks();
+                this.initGamepad();
+                this.setupEventListeners();
+            }
+            
+            initJoysticks() {
+                this.joystick1 = document.getElementById('joystick1');
+                this.stick1 = document.getElementById('stick1');
+                this.joystick2 = document.getElementById('joystick2');
+                this.stick2 = document.getElementById('stick2');
+                
+                this.joystick1Rect = this.joystick1.getBoundingClientRect();
+                this.joystick2Rect = this.joystick2.getBoundingClientRect();
+            }
+            
+            setupEventListeners() {
+                // Mouse events
+                this.joystick1.addEventListener('mousedown', this.handleMouseDown.bind(this, 1));
+                this.joystick2.addEventListener('mousedown', this.handleMouseDown.bind(this, 2));
+                document.addEventListener('mousemove', this.handleMouseMove.bind(this));
+                document.addEventListener('mouseup', this.handleMouseUp.bind(this));
+                
+                // Touch events
+                this.joystick1.addEventListener('touchstart', this.handleTouchStart.bind(this, 1));
+                this.joystick2.addEventListener('touchstart', this.handleTouchStart.bind(this, 2));
+                document.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
+                document.addEventListener('touchend', this.handleTouchEnd.bind(this));
+                
+                // Gamepad polling
+                window.addEventListener("gamepadconnected", (e) => {
+                    console.log("Gamepad connected:", e.gamepad.id);
+                    this.gamepadIndex = e.gamepad.index;
+                    this.gamepadLoop();
+                });
+                
+                window.addEventListener("gamepaddisconnected", () => {
+                    console.log("Gamepad disconnected");
+                    this.gamepadIndex = null;
+                });
+            }
+            
+            // Mouse handlers
+            handleMouseDown(joystickNum, e) {
+                e.preventDefault();
+                this.activeTouches['mouse'] = { joystick: joystickNum };
+                this.updateJoystickPosition(joystickNum, e.clientX, e.clientY);
+            }
+            
+            handleMouseMove(e) {
+                if (this.activeTouches['mouse']) {
+                    const joystickNum = this.activeTouches['mouse'].joystick;
+                    this.updateJoystickPosition(joystickNum, e.clientX, e.clientY);
+                }
+            }
+            
+            handleMouseUp() {
+                if (this.activeTouches['mouse']) {
+                    const joystickNum = this.activeTouches['mouse'].joystick;
+                    this.resetJoystick(joystickNum);
+                    delete this.activeTouches['mouse'];
+                }
+            }
+            
+            // Touch handlers
+            handleTouchStart(joystickNum, e) {
+                e.preventDefault();
+                for (let touch of e.changedTouches) {
+                    this.activeTouches[touch.identifier] = { joystick: joystickNum };
+                    this.updateJoystickPosition(joystickNum, touch.clientX, touch.clientY);
+                }
+            }
+            
+            handleTouchMove(e) {
+                e.preventDefault();
+                for (let touch of e.changedTouches) {
+                    if (this.activeTouches[touch.identifier]) {
+                        const joystickNum = this.activeTouches[touch.identifier].joystick;
+                        this.updateJoystickPosition(joystickNum, touch.clientX, touch.clientY);
+                    }
+                }
+            }
+            
+            handleTouchEnd(e) {
+                for (let touch of e.changedTouches) {
+                    if (this.activeTouches[touch.identifier]) {
+                        const joystickNum = this.activeTouches[touch.identifier].joystick;
+                        this.resetJoystick(joystickNum);
+                        delete this.activeTouches[touch.identifier];
+                    }
+                }
+            }
+            
+            // Gamepad support
+            initGamepad() {
+                if (navigator.getGamepads().filter(g => g).length > 0) {
+                    this.gamepadIndex = navigator.getGamepads().findIndex(g => g);
+                    this.gamepadLoop();
+                }
+            }
+            
+            gamepadLoop() {
+                if (this.gamepadIndex === null) return;
+                
+                const gamepad = navigator.getGamepads()[this.gamepadIndex];
+                if (!gamepad) return;
+                
+                // Map gamepad axes to joysticks
+                // Left stick (usually axes 0 and 1) -> joystick1
+                this.joystickData.joystick1.x = this.scaleGamepadValue(gamepad.axes[0]);
+                this.joystickData.joystick1.y = this.scaleGamepadValue(gamepad.axes[1] * 1); // Invert Y axis
+                
+                // Right stick (usually axes 2 and 3) -> joystick2
+                this.joystickData.joystick2.x = this.scaleGamepadValue(gamepad.axes[2]);
+                this.joystickData.joystick2.y = this.scaleGamepadValue(gamepad.axes[3] * 1); // Invert Y axis
+                
+                this.updateStickPositions();
+                this.sendJoystickData();
+                
+                requestAnimationFrame(this.gamepadLoop.bind(this));
+            }
+            
+            scaleGamepadValue(value) {
+                // Scale from -1 to 1 to -100 to 100 and apply deadzone
+                const deadzone = 0.05;
+                if (Math.abs(value) < deadzone) return 0;
+                return Math.round(value * 100);
+            }
+            
+            // Common joystick position update
+            updateJoystickPosition(joystickNum, clientX, clientY) {
+                const joystick = joystickNum === 1 ? this.joystick1 : this.joystick2;
+                const stick = joystickNum === 1 ? this.stick1 : this.stick2;
                 const rect = joystick.getBoundingClientRect();
+                
                 const centerX = rect.left + rect.width / 2;
                 const centerY = rect.top + rect.height / 2;
                 const dx = clientX - centerX;
                 const dy = clientY - centerY;
-                joystickData[joystickKey].x = Math.min(100, Math.max(-100, dx / 75 * 100));
-                joystickData[joystickKey].y = Math.min(100, Math.max(-100, -dy / 75 * 100));
-                stick.style.left = `${Math.min(75, Math.max(-75, dx)) + 55}px`;
-                stick.style.top = `${Math.min(75, Math.max(-75, dy)) + 55}px`;
-                sendJoystickData();
+                
+                // Calculate distance from center
+                const distance = Math.min(75, Math.sqrt(dx * dx + dy * dy));
+                const angle = Math.atan2(dy, dx);
+                
+                // Calculate stick position (constrained to joystick boundary)
+                const stickX = distance * Math.cos(angle);
+                const stickY = distance * Math.sin(angle);
+                
+                // Update stick visual position
+                stick.style.left = `${stickX + 55}px`;
+                stick.style.top = `${stickY + 55}px`;
+                
+                // Update joystick data (scaled to -100 to 100)
+                const xVal = Math.round((stickX / 75) * 100);
+                const yVal = Math.round((stickY / 75) * 100);
+                
+                // Apply deadzone - values within deadzone range become 0
+                const applyDeadzone = (value) => {
+                return Math.abs(value) < this.deadzone ? 0 : value;
+            };
+                
+                if (joystickNum === 1) {
+                    this.joystickData.joystick1.x = xVal;
+                    this.joystickData.joystick1.y = yVal;
+                } else {
+                    this.joystickData.joystick2.x = xVal;
+                    this.joystickData.joystick2.y = yVal;
+                }
+                
+                this.sendJoystickData();
             }
-
-            function resetJoystick() {
-                joystickData[joystickKey] = { x: 0, y: 0 };
+            
+            resetJoystick(joystickNum) {
+                const stick = joystickNum === 1 ? this.stick1 : this.stick2;
+                
                 stick.style.left = '55px';
                 stick.style.top = '55px';
-                sendJoystickData();
+                
+                if (joystickNum === 1) {
+                    this.joystickData.joystick1.x = 0;
+                    this.joystickData.joystick1.y = 0;
+                } else {
+                    this.joystickData.joystick2.x = 0;
+                    this.joystickData.joystick2.y = 0;
+                }
+                
+                this.sendJoystickData();
             }
-
-            joystick.addEventListener('mousedown', (e) => { isDragging = true; moveStick(e.clientX, e.clientY); });
-            joystick.addEventListener('mousemove', (e) => { if (isDragging) moveStick(e.clientX, e.clientY); });
-            joystick.addEventListener('mouseup', () => { isDragging = false; resetJoystick(); });
-            joystick.addEventListener('mouseleave', () => { isDragging = false; resetJoystick(); });
-            joystick.addEventListener('touchstart', (e) => { isDragging = true; moveStick(e.touches[0].clientX, e.touches[0].clientY); });
-            joystick.addEventListener('touchmove', (e) => { e.preventDefault(); if (isDragging) moveStick(e.touches[0].clientX, e.touches[0].clientY); });
-            joystick.addEventListener('touchend', () => { isDragging = false; resetJoystick(); });
+            
+            updateStickPositions() {
+                // Update visual positions based on current joystick data
+                this.stick1.style.left = `${(this.joystickData.joystick1.x / 100) * 75 + 55}px`;
+                this.stick1.style.top = `${(this.joystickData.joystick1.y / 100) * 75 + 55}px`;
+                
+                this.stick2.style.left = `${(this.joystickData.joystick2.x / 100) * 75 + 55}px`;
+                this.stick2.style.top = `${(this.joystickData.joystick2.y / 100) * 75 + 55}px`;
+            }
+            
+            sendJoystickData() {
+                socket.emit('joystick_data', this.joystickData);
+            }
         }
+        
+        // Initialize the controller
+        const joystickController = new JoystickController();
 
-        function sendJoystickData() { socket.emit('joystick_data', joystickData); }
-        setupJoystick('joystick1', 'stick1', 'joystick1');
-        setupJoystick('joystick2', 'stick2', 'joystick2');
+        // Update Meters with Data from Socket.IO
+        socket.on('sensor_data', function(data) {
+            console.log('Received sensor data:', data);
+            document.getElementById('temp-value').textContent = data.temperature.toFixed(1);
+            document.getElementById('tds-value').textContent = data.tds.toFixed(1);
+            document.getElementById('depth-value').textContent = data.depth.toFixed(2);
+            document.getElementById('ph-value').textContent = data.ph.toFixed(2);
+        });
+        
+        const restartBtn = document.getElementById('restart-btn');
+        const shutdownBtn = document.getElementById('shutdown-btn');
+        const restartRovBtn = document.getElementById('restartRovBtn');
+        const restartMjpgBtn = document.getElementById('restartMjpgBtn');
 
-        // 🎮 GAMEPAD SUPPORT (XInput/DInput)
-        window.addEventListener("gamepadconnected", () => {
-            console.log("Gamepad connected!");
-            setInterval(updateGamepad, 100);
+        restartBtn.addEventListener('click', () => {
+            fetch('http://192.168.0.11:5000/restart', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => alert(data.message))
+                .catch(err => alert('Failed to restart Raspberry Pi'));
         });
 
-        function updateGamepad() {
-            const gamepads = navigator.getGamepads();
-            if (!gamepads) return;
-            const gp = gamepads[0]; // Use the first detected gamepad
+        shutdownBtn.addEventListener('click', () => {
+            fetch('http://192.168.0.11:5000/shutdown', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => alert(data.message))
+                .catch(err => alert('Failed to shutdown Raspberry Pi'));
+        });
 
-            if (gp) {
-                // 🎮 Left Stick → Joystick 1
-                joystickData.joystick1.x = Math.round(gp.axes[0] * 100); // Left Stick X
-                joystickData.joystick1.y = Math.round(gp.axes[1] * -100); // Left Stick Y (inverted)
+        restartRovBtn.addEventListener('click', () => {
+            fetch('http://192.168.0.11:5000/restart_rov', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => alert(data.message))
+                .catch(err => alert('Failed to restart ROV service'));
+        });
 
-                // 🎮 Right Stick → Joystick 2
-                joystickData.joystick2.x = Math.round(gp.axes[2] * 100); // Right Stick X
-                joystickData.joystick2.y = Math.round(gp.axes[3] * -100); // Right Stick Y (inverted)
+        restartMjpgBtn.addEventListener('click', () => {
+            fetch('http://192.168.0.11:5000/restart_mjpg', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => alert(data.message))
+                .catch(err => alert('Failed to restart MJPG service'));
+        });
 
-                sendJoystickData();
+        // Prevent scrolling when touching joysticks
+        document.addEventListener('touchmove', function(e) {
+            if (e.target.classList.contains('joystick')) {
+                e.preventDefault();
             }
-        }
+        }, { passive: false });
     </script>
 </body>
 </html>
