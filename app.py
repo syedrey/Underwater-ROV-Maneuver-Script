@@ -12,7 +12,7 @@ CORS(app)  # Enable CORS for Flask routes
 socketio = SocketIO(app, async_mode="gevent", cors_allowed_origins="*")  # Enable gevent
 
 # Initialize serial connection
-arduino = serial.Serial('COM3', 230400)  # Change to your Arduino port
+arduino = serial.Serial('/dev/arduino', 230400)  # Change to your Arduino port
 time.sleep(2)  # Give time for Arduino to initialize
 
 @app.route('/')
