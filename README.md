@@ -1,4 +1,4 @@
-A script developed with help of GPT AI to create a local hosted control centre webpage.
+A script developed to create a local hosted control centre webpage.
 
 The features of the webpage are:\
 -Virtual joystick for motor control with touchscreen, mouse and x-input/d-input gamepad support.\
